@@ -1,5 +1,7 @@
 import mplcursors
 import numpy as np
+import tkinter as tk
+import toplevelwindow as tl
 
 
 def invertimage(img):
@@ -7,7 +9,12 @@ def invertimage(img):
     return img
 
 def verticalplot(obj):
-    angle = int(obj.directionbox.get())
+    try:
+        angle = int(obj.directionbox.get())
+    except ValueError:
+        angle = 0
+        obj.directionbox.delete(0, tk.END)
+    
     level = obj.evallevel
 
     if obj.verplotax is not None:
@@ -46,8 +53,16 @@ def verticalplot(obj):
     if len(obj.x1markerbox.get()) == 0 or len(obj.x2markerbox.get()) == 0:
         obj.markersflag = False
     else:
-        x1 = float(obj.x1markerbox.get())
-        x2 = float(obj.x2markerbox.get())
+        try:
+            x1 = float(obj.x1markerbox.get())
+            x2 = float(obj.x2markerbox.get())
+        except ValueError:
+            x1 = 0
+            x2 = 0
+            obj.x1markerbox.delete(0, tk.END)
+            obj.x2markerbox.delete(0, tk.END)
+
+        
         if (x1 >= x2) or (x1 < 0) or (x2 > obj.maxdistance):
             obj.markersflag = False
         else:
@@ -212,11 +227,20 @@ def contourplot(obj):
     if obj.lowlevelsplotvar.get() == 1:
         lowlevels = np.full_like(obj.zvalues, np.nan)
         lowlevels[~mask] = obj.zvalues[~mask]
-        obj.contourplotax.imshow(lowlevels, interpolation='none', cmap='Greens',
-                                  extent=limits, alpha=0.3)
+        try:
+            obj.contourplotax.imshow(lowlevels, interpolation='none', cmap='Greens',
+                                     extent=limits, alpha=0.3)
+        except MemoryError:
+            tl.popupmessage(obj.master, 
+                            "Memory Error", "There was a memory error, please restart program.", 220)
 
-    layer2 = obj.contourplotax.imshow(customval, interpolation='none', cmap='YlOrRd',
+    try:
+        layer2 = obj.contourplotax.imshow(customval, interpolation='none', cmap='YlOrRd',
                                        extent=limits, alpha=0.7, vmin=threshold, vmax=1)
+    except MemoryError:
+        tl.popupmessage(obj.master, 
+                        "Memory Error", "There was a memory error, please restart program.", 220)
+    
 
     tickvalues = np.linspace(threshold, 1, 5)
     ticklabels = []
