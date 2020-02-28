@@ -528,35 +528,100 @@ class Main(ttk.Frame):
     def checkheight(self):
         self.allsectorslist = [self.sector1] + self.sectorslist
         # check min evaluation level:
-        minheight = 1000
+        minheight = 1e10
         for sec in self.allsectorslist:
             if sec.antheight < minheight:
                 minheight = sec.antheight
-
-        minevallevel = minheight + self.reflevel - self.evallevel - 2
-        return (minevallevel >= 0.5)
+        
+        threshold = 0.5
+        maxevallevel = minheight + self.reflevel - 2 - threshold
+        return maxevallevel
 
     def get_grid(self):
-        # get levels from main buttons
-        self.evallevel = float(self.evallevelbox.get())
-        self.reflevel = float(self.reflevelbox.get())
+        # get levels from main tab buttons
+        self.getsector1()
+        
+        try:
+            self.reflevel = float(self.reflevelbox.get())
+        except ValueError:
+            tl.popupmessage(self.master, "Value error", "Invalid number for reference level, reverting to 0 value", 200)
+            self.reflevel = 0
+            self.reflevelbox.delete(0, tk.END)
+            self.reflevelbox.insert(0, 0)
+        
+        # get all sectors and max valid eval height
+        maxevallevel = self.checkheight()
+        
+        try:
+            self.evallevel = float(self.evallevelbox.get())
+            if self.evallevel > maxevallevel:
+                tl.popupmessage(self.master, "Evaluation level error", 
+                                f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting evaluation level to maximum valid value = {maxevallevel}m.", 200)
+                self.evallevel = maxevallevel
+                self.evallevelbox.delete(0, tk.END)
+                self.evallevelbox.insert(0, maxevallevel)
+        except ValueError:
+            if self.reflevel <= maxevallevel:
+                tl.popupmessage(self.master, "Value error", 
+                                f"Invalid number for evaluation level, setting equal to reference level = {self.reflevel}m", 200)
+                self.evallevel = self.reflevel
+                self.evallevelbox.delete(0, tk.END)
+                self.evallevelbox.insert(0, self.reflevel)
+            else:
+                tl.popupmessage(self.master, "Value error", 
+                                f"Invalid number for evaluation level, setting equal to maximum valid evaluation level value: {maxevallevel}m", 200)
+                self.evallevel = maxevallevel
+                self.evallevelbox.delete(0, tk.END)
+                self.evallevelbox.insert(0, maxevallevel)
+        
 
         self.evallevel2box.delete(0, tk.END)
         self.evallevel2box.insert(0, self.evallevel)
 
-        self.allsectorslist = [self.sector1] + self.sectorslist
-        self.validheight = self.checkheight()
 
     def reget_grid(self):
         # get levels from contourplot buttons
-        self.evallevel = float(self.evallevel2box.get())
-
+        
+        self.getsector1()
+        
+        try:
+            self.reflevel = float(self.reflevelbox.get())
+        except ValueError:
+            tl.popupmessage(self.master, "Value error", "Invalid number for reference level, reverting to 0 value", 200)
+            self.reflevel = 0
+            self.reflevelbox.delete(0, tk.END)
+            self.reflevelbox.insert(0, 0)
+            
+        # get all sectors and max valid eval height
+        maxevallevel = self.checkheight()
+        
+        
+        # get evaluation level from box in image plot tab
+        try:
+            self.evallevel = float(self.evallevel2box.get())
+            if self.evallevel > maxevallevel:
+                tl.popupmessage(self.master, "Evaluation level error", f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting evaluation level to maximum valid value = {maxevallevel}m.", 200)
+                self.evallevel = maxevallevel
+                self.evallevel2box.delete(0, tk.END)
+                self.evallevel2box.insert(0, maxevallevel)
+        except ValueError:
+            if self.reflevel <= maxevallevel:
+                tl.popupmessage(self.master, "Value error", f"Invalid number for evaluation level, setting equal to reference level value = {self.reflevel}m", 200)
+                self.evallevel = self.reflevel
+                self.evallevel2box.delete(0, tk.END)
+                self.evallevel2box.insert(0, self.reflevel)
+            else:
+                tl.popupmessage(self.master, "Value error", "Invalid number for evaluation level, setting equal to maximum valid evaluation level value = {maxevallevel}m", 200)
+                self.evallevel = maxevallevel
+                self.evallevel2box.delete(0, tk.END)
+                self.evallevel2box.insert(0, maxevallevel)
+            
+        
+        
         self.evallevelbox.delete(0, tk.END)
         self.evallevelbox.insert(0, self.evallevel)
 
-        self.getsector1()
-        self.allsectorslist = [self.sector1] + self.sectorslist
-        self.checkheight()
+
         self.construct_grid_from_levels()
 
     def construct_grid_from_levels(self):
@@ -654,28 +719,17 @@ class Main(ttk.Frame):
     def plotlines(self):
         self.plotlinesbtn.config(state='disabled', text='Progressing..')
 
-        self.getsector1()
         self.get_grid()
 
-        if self.validheight:
-            if sum(self.sector1.totpower.values()):
-                plots.horizontalplot(self)
-                plots.verticalplot(self)
-            else:
-                tl.popupmessage(self.master, 'No power',
-                            "Power error: Enter values for sector 1 that produce total power greater than 0.",
-                            200)
-            # self.redrawbtn.config(state='normal')
-        else:
-            # clear plots and calculate only horizontal
-            tl.popupmessage(self.master, 'Warning',
-                            "Evaluation level (+2m human height) isn't low enought related to minimum antenna height. "
-                            "Only horizontal Rm values are calculated",
-                            200)
-            plots.horizontalplot(self)
 
-            if self.verplotax is not None:
-                self.verplotax.cla()
+        if sum(self.sector1.totpower.values()):
+            plots.horizontalplot(self)
+            plots.verticalplot(self)
+        else:
+            tl.popupmessage(self.master, 'No power',
+                        "Power error: Enter values for sector 1 that produce total power greater than 0.",
+                        200)
+
 
         self.plotlinesbtn.config(state='normal', text='Plot Lines')
 
@@ -758,7 +812,6 @@ class Main(ttk.Frame):
 
         self.progressvar.set('Select points and distance to scale')
         tl.popupmessage(self.master, 'Next step:', 'Select points on image and enter distance to scale', 250)
-        self.flagpoints = True
         self.scaleimage()
         self.clearimagebtn.config(state='normal')
 
@@ -817,7 +870,6 @@ class Main(ttk.Frame):
             self.an2.remove()
             self.line1.pop(0).remove()
             self.scalebtn.config(state='disabled')
-            self.flagpoints = True
             self.contourplotcanvas.draw()
             self.resetbtn.config(state='disabled')
             self.progressvar.set('Select BS position on image')
@@ -829,17 +881,21 @@ class Main(ttk.Frame):
         canvas = self.contourplotcanvas
         global coords
         global cid
-        coords = []
 
         self.point1var.set('None')
         self.point2var.set('None')
-        if self.flagpoints == False:
+        
+        if len(coords) > 0:
             self.p1.remove()
-            self.p2.remove()
             self.an1.remove()
+        
+        if len(coords) >1 :
+            self.p2.remove()
             self.an2.remove()
             self.line1.pop(0).remove()
-            self.contourplotcanvas.draw()
+        
+        self.contourplotcanvas.draw()
+        coords = []
         cid = fig.canvas.mpl_connect('button_press_event', self.clicktoscale)
         self.resetbtn.config(state='disabled')
         self.scalebtn.config(state='disabled')
@@ -861,7 +917,6 @@ class Main(ttk.Frame):
             self.point1var.set('({:d}, {:d})'.format(int(coords[0][0]), int(coords[0][1])))
             self.p1 = self.contourplotax.scatter(ix, iy, c='blue', edgecolors='red')
             self.an1 = self.contourplotax.annotate('A', (ix, iy), xytext=(5 + ix, iy - 5))
-            self.flagpoints = False
             self.contourplotcanvas.draw()
 
         global cid
