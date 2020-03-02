@@ -225,8 +225,8 @@ def contourplot(obj):
                                                     c='white')
 
     if obj.lowlevelsplotvar.get() == 1:
-        lowlevels = np.full_like(obj.zvalues, np.nan)
-        lowlevels[~mask] = obj.zvalues[~mask]
+        lowlevels = np.full_like(obj.zvalues, np.nan).astype('float32')
+        lowlevels[~mask] = obj.zvalues[~mask].astype('float32')
         try:
             obj.contourplotax.imshow(lowlevels, interpolation='none', cmap='Greens',
                                      extent=limits, alpha=0.3)
@@ -261,7 +261,7 @@ def contourplot(obj):
     def on_add(sel):
         i, j = sel.target.index
         sel.annotation.set_text(
-            'Exposure={0:04.2f} \nrho={1:0.1f}m \nφ={2:0.0f}°'.format(obj.zvalues[i, j], obj.rho2[i, j],
+            'Exposure={0:04.2f} \nrho={1:0.1f}m \nφ={2:.0f}°'.format(obj.zvalues[i, j], obj.rho2[i, j],
                                                                       obj.phi2[i, j]))
 
     obj.contourplotbtn.config(state='normal', text='Recalculate')

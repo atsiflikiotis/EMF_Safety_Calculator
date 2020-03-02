@@ -401,7 +401,6 @@ class Main(ttk.Frame):
             self.sectorsdeletebtn[i].grid(row=i, column=4, padx=5, pady=5)
 
     def deletesector(self, i):
-        print(i)
         # delete all ui instances:
         # for i in range(len(self.sectorslabels)):
         #     self.sectorslabels[i].grid_forget()
@@ -556,20 +555,24 @@ class Main(ttk.Frame):
             self.evallevel = float(self.evallevelbox.get())
             if self.evallevel > maxevallevel:
                 tl.popupmessage(self.master, "Evaluation level error", 
-                                f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting evaluation level to maximum valid value = {maxevallevel}m.", 200)
+                                f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting "
+                                f"evaluation level to maximum valid value = {maxevallevel}m.", 200)
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
         except ValueError:
             if self.reflevel <= maxevallevel:
                 tl.popupmessage(self.master, "Value error", 
-                                f"Invalid number for evaluation level, setting equal to reference level = {self.reflevel}m", 200)
+                                f"Invalid number for evaluation level, setting equal to reference level = "
+                                f"{self.reflevel}m", 200)
+
                 self.evallevel = self.reflevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, self.reflevel)
             else:
                 tl.popupmessage(self.master, "Value error", 
-                                f"Invalid number for evaluation level, setting equal to maximum valid evaluation level value: {maxevallevel}m", 200)
+                                f"Invalid number for evaluation level, setting equal to "
+                                f"maximum valid evaluation level value: {maxevallevel}m", 200)
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
@@ -641,11 +644,13 @@ class Main(ttk.Frame):
         self.size = (np.size(self.yy), np.size(self.xx))
         self.rho = np.sqrt(self.xx ** 2 + self.yy ** 2)
         self.phi = np.arctan2(self.xx, self.yy) * 180 / np.pi
-        self.phi = np.round(self.phi).astype(int)
+        #get phi angles to 0.1degrees accuracy
+        self.phi = np.round(self.phi, 1)
 
     def lineargrid(self):
         # make linear and finer grid
         f1 = RectBivariateSpline(self.y, self.x, self.totaldepps, kx=2, ky=2)
+
         # xcoord = np.linspace(-self.radius, self.radius, self.size2 + 1)
         # ycoord = xcoord
         # test with x0,y0
@@ -657,7 +662,7 @@ class Main(ttk.Frame):
         self.phi2 = np.arctan2(self.xx2, self.yy2) * 180 / np.pi
         self.phi2[self.phi2 < 0] = self.phi2[self.phi2 < 0] + 360
 
-        self.zvalues = f1(self.ycoord, self.xcoord)
+        self.zvalues = f1(self.ycoord, self.xcoord).astype('float32')
 
     def totaldeppsgrid(self):
         self.totaldepps = np.full(self.size, 0.0)
@@ -679,18 +684,20 @@ class Main(ttk.Frame):
 
         sector.phi[sector.phi < 0] = sector.phi[sector.phi < 0] + 360
         sector.phi[(sector.phi > 359) & (sector.phi < 360)] = 0
-        sector.phi = np.round(sector.phi).astype(int)
-
-        sector.theta = np.round(np.arctan2(sector.height, self.rho) * 180 / np.pi).astype(int)
 
         maskbehind = (sector.phi > 90) & (sector.phi < 270)  # behind antenna
         # maskfront = np.logical_not(maskbehind)    #in front of antenna
+
+        # round to 1 decimal of phi and theta
+        sector.phi = np.round(sector.phi, 1)
+        sector.theta = np.round(np.arctan2(sector.height, self.rho) * 180 / np.pi, 1)
 
         sector.theta[maskbehind] = 180 - sector.theta[maskbehind]
 
         sector.theta = sector.theta - sector.mechtilt
 
         sector.theta[sector.theta < 0] = sector.theta[sector.theta < 0] + 360
+
 
         sector.R = np.sqrt(sector.height ** 2 + self.rho ** 2)
         sector.depps = np.full(self.size, 0.0)
@@ -703,10 +710,19 @@ class Main(ttk.Frame):
                 sector.powerdensity[band] = np.full(self.size, 0.0)
                 sector.banddepps[band] = np.full(self.size, 0.0)
                 sector.gainatten[band] = np.full(self.size, 0.0)
+                # interpolate patterns from 1degree step to 0.1degrees step
+                # horizontal:
+                f1 = InterpolatedUnivariateSpline(np.linspace(0, 360, 361), sector.horizontal[band], k=1)
+                ihorizontal = f1(np.linspace(0, 360, 3601))
+                # vertical
+                f2 = InterpolatedUnivariateSpline(np.linspace(0, 360, 361), sector.vertical[band], k=1)
+                ivertical = f2(np.linspace(0, 360, 3601))
+
                 for i in range(self.size[0]):
                     for j in range(self.size[1]):
-                        sector.gainatten[band][i, j] = sector.gain[band] - sector.horizontal[band][
-                            sector.phi[i, j]] - sector.vertical[band][sector.theta[i, j]]
+                        sector.gainatten[band][i, j] = sector.gain[band] - \
+                                                       ihorizontal[int(10 * sector.phi[i, j])] - \
+                                                       ivertical[int(10 * sector.theta[i, j])]
 
                         sector.powerdensity[band][i, j] = self.s(power, sector.gainatten[band][i, j],
                                                                  sector.R[i, j])
@@ -739,12 +755,18 @@ class Main(ttk.Frame):
         if angle < 0:
             angle += 360
 
-        Ho = self.sector1.antheight + self.reflevel - level - 2
+        # get grid according to antenna with lowest height (more critical)
+        Ho = 1e5
+        for sector in self.allsectorslist:
+            if Ho > sector.antheight:
+                Ho = sector.antheight
+
+        # correct height with reference level, evalluation level and 2m human height
+        Ho = Ho + self.reflevel - level - 2
         thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
         thetaxmax = int(np.ceil(thetaxend))
         xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
         linedepps = np.zeros_like(xvalues)
-        yinterp = np.zeros_like(xvalues)
 
         for sector in self.allsectorslist:
             H = np.full_like(xvalues, sector.antheight + self.reflevel - level - 2)
@@ -834,6 +856,12 @@ class Main(ttk.Frame):
         if self.cb is not None:
             self.cb.remove()
 
+
+        global bscoords
+        if bscoords:
+            self.bsmarker.remove()
+            self.bsmarkertext.remove()
+
         self.contourplotcanvas.draw()
 
     def scaleimage(self):
@@ -869,6 +897,7 @@ class Main(ttk.Frame):
             self.an1.remove()
             self.an2.remove()
             self.line1.pop(0).remove()
+            coords = []
             self.scalebtn.config(state='disabled')
             self.contourplotcanvas.draw()
             self.resetbtn.config(state='disabled')
@@ -889,7 +918,7 @@ class Main(ttk.Frame):
             self.p1.remove()
             self.an1.remove()
         
-        if len(coords) >1 :
+        if len(coords) > 1:
             self.p2.remove()
             self.an2.remove()
             self.line1.pop(0).remove()
