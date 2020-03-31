@@ -25,19 +25,21 @@ def verticalplot(obj):
     obj.verplotax.set_xlabel('Distance (m)')
     obj.verplotax.set_ylabel('Exposure level')
 
-    # xvalues, linedepps, xinterp, yinterp = obj.verticalvalues(angle, level)
-    xinterp, yinterp = obj.verticalvalues(angle, level)
+    xinterp, yinterp, flagscatter, xvalues, yvalues = obj.verticalvalues(angle, level)
 
-    # realplot = obj.verplotax.scatter(xvalues, linedepps, marker='.', color='blue')
+    if flagscatter:
+        realplot = obj.verplotax.scatter(xvalues, yvalues, marker='.', color='blue')
+
     setver = obj.verplotax.scatter(xinterp, yinterp, alpha=0)
 
     interplot, = obj.verplotax.plot(xinterp, yinterp)
 
-    interplot.set_label('Interpolated values')
-    # realplot.set_label('Sampled points/1°')
-    obj.verplotax.set_xlim(0, obj.maxdistance)
+    if flagscatter:
+        interplot.set_label('Interpolated values')
+        realplot.set_label('Sampled points/1°')
+        obj.verplotax.legend(loc=0, frameon=True, framealpha=0.8, facecolor='white')
 
-    # obj.verplotax.legend(loc=0, frameon=True, framealpha=0.8, facecolor='white')
+    obj.verplotax.set_xlim(0, obj.maxdistance)
 
     cursor = mplcursors.cursor(setver, hover=True)
 
@@ -215,15 +217,14 @@ def contourplot(obj):
     mask = (obj.zvalues >= threshold)
     customval[mask] = obj.zvalues[mask]
 
-
     obj.contourplotax.imshow(obj.img, interpolation='bicubic', extent=limits)
 
     obj.contourplotax.grid(None)
 
     obj.bsmarker = obj.contourplotax.scatter(obj.bsxposition, obj.bsyposition, c='green', edgecolors='white')
     obj.bsmarkertext = obj.contourplotax.annotate('BS', (obj.bsxposition, obj.bsyposition),
-                                                    xytext=(0.1 + obj.bsxposition, obj.bsyposition + 0.1),
-                                                    c='white')
+                                                  xytext=(0.1 + obj.bsxposition, obj.bsyposition + 0.1),
+                                                  c='white')
 
     if obj.lowlevelsplotvar.get() == 1:
         lowlevels = np.full_like(obj.zvalues, np.nan).astype('float32')
@@ -241,7 +242,6 @@ def contourplot(obj):
     except MemoryError:
         tl.popupmessage(obj.master, 
                         "Memory Error", "There was a memory error, please restart program.", 220)
-    
 
     tickvalues = np.linspace(threshold, 1, 5)
     ticklabels = []

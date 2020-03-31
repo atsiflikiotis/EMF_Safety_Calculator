@@ -748,23 +748,27 @@ class Main(ttk.Frame):
         if angle < 0:
             angle += 360
 
-        # get grid according to antenna with lowest height (more critical)
-        # Ho = 1e5
-        # for sector in self.allsectorslist:
-        #     if Ho > sector.antheight:
-        #         Ho = sector.antheight
-
-        # correct height with reference level, evalluation level and 2m human height
-
         xinterp = np.arange(0, self.maxdistance + 0.05, 0.05)
         yinterp = np.zeros_like(xinterp)
+        flag = True
+        Ho = self.sector1.antheight + self.reflevel - level - 2
+        thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
+        thetaxmax = int(np.ceil(thetaxend))
+        xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
+        H = np.full_like(xvalues, Ho)
+        yvalues = np.zeros_like(xvalues)
 
         for sector in self.allsectorslist:
+            if sector.antheight != self.sector1.antheight:
+                flag = False
+
             Ho = sector.antheight + self.reflevel - level - 2
-            thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
-            thetaxmax = int(np.ceil(thetaxend))
-            xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
-            H = np.full_like(xvalues, Ho)
+            if not flag:
+                # new theta and x values
+                thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
+                thetaxmax = int(np.ceil(thetaxend))
+                xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
+                H = np.full_like(xvalues, Ho)
             sectortheta = np.round(np.arctan2(H, xvalues) * 180 / np.pi).astype(int) - sector.mechtilt
             linedepps = np.zeros_like(xvalues)
             R = np.sqrt(H ** 2 + xvalues ** 2)
@@ -787,8 +791,10 @@ class Main(ttk.Frame):
 
             fvertical = InterpolatedUnivariateSpline(xvalues, linedepps, k=2)
             yinterp += fvertical(xinterp)
+            if flag:
+                yvalues += linedepps
 
-        return xinterp, yinterp
+        return xinterp, yinterp, flag, xvalues, yvalues
 
     def horizontalsafety(self, phi):
         sum_ = 0
