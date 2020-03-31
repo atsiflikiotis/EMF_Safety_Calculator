@@ -25,18 +25,19 @@ def verticalplot(obj):
     obj.verplotax.set_xlabel('Distance (m)')
     obj.verplotax.set_ylabel('Exposure level')
 
-    xvalues, linedepps, xinterp, yinterp = obj.verticalvalues(angle, level)
+    # xvalues, linedepps, xinterp, yinterp = obj.verticalvalues(angle, level)
+    xinterp, yinterp = obj.verticalvalues(angle, level)
 
-    realplot = obj.verplotax.scatter(xvalues, linedepps, marker='.', color='blue')
+    # realplot = obj.verplotax.scatter(xvalues, linedepps, marker='.', color='blue')
     setver = obj.verplotax.scatter(xinterp, yinterp, alpha=0)
 
     interplot, = obj.verplotax.plot(xinterp, yinterp)
 
     interplot.set_label('Interpolated values')
-    realplot.set_label('Sampled points/1°')
+    # realplot.set_label('Sampled points/1°')
     obj.verplotax.set_xlim(0, obj.maxdistance)
 
-    obj.verplotax.legend(loc=0, frameon=True, framealpha=0.8, facecolor='white')
+    # obj.verplotax.legend(loc=0, frameon=True, framealpha=0.8, facecolor='white')
 
     cursor = mplcursors.cursor(setver, hover=True)
 

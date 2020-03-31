@@ -618,12 +618,9 @@ class Main(ttk.Frame):
                 self.evallevel = maxevallevel
                 self.evallevel2box.delete(0, tk.END)
                 self.evallevel2box.insert(0, maxevallevel)
-            
-        
-        
+
         self.evallevelbox.delete(0, tk.END)
         self.evallevelbox.insert(0, self.evallevel)
-
 
         self.construct_grid_from_levels()
 
@@ -737,18 +734,14 @@ class Main(ttk.Frame):
 
         self.get_grid()
 
-
         if sum(self.sector1.totpower.values()):
             plots.horizontalplot(self)
             plots.verticalplot(self)
         else:
             tl.popupmessage(self.master, 'No power',
-                        "Power error: Enter values for sector 1 that produce total power greater than 0.",
-                        200)
-
+                            "Power error: Enter values for sector 1 that produce total power greater than 0.", 200)
 
         self.plotlinesbtn.config(state='normal', text='Plot Lines')
-
 
     def verticalvalues(self, angle, level):
 
@@ -756,21 +749,24 @@ class Main(ttk.Frame):
             angle += 360
 
         # get grid according to antenna with lowest height (more critical)
-        Ho = 1e5
-        for sector in self.allsectorslist:
-            if Ho > sector.antheight:
-                Ho = sector.antheight
+        # Ho = 1e5
+        # for sector in self.allsectorslist:
+        #     if Ho > sector.antheight:
+        #         Ho = sector.antheight
 
         # correct height with reference level, evalluation level and 2m human height
-        Ho = Ho + self.reflevel - level - 2
-        thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
-        thetaxmax = int(np.ceil(thetaxend))
-        xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
-        linedepps = np.zeros_like(xvalues)
+
+        xinterp = np.arange(0, self.maxdistance + 0.05, 0.05)
+        yinterp = np.zeros_like(xinterp)
 
         for sector in self.allsectorslist:
-            H = np.full_like(xvalues, sector.antheight + self.reflevel - level - 2)
+            Ho = sector.antheight + self.reflevel - level - 2
+            thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
+            thetaxmax = int(np.ceil(thetaxend))
+            xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
+            H = np.full_like(xvalues, Ho)
             sectortheta = np.round(np.arctan2(H, xvalues) * 180 / np.pi).astype(int) - sector.mechtilt
+            linedepps = np.zeros_like(xvalues)
             R = np.sqrt(H ** 2 + xvalues ** 2)
             for band in bands:
 
@@ -789,11 +785,10 @@ class Main(ttk.Frame):
                     banddepps = powerdensity / self.limit(band)
                     linedepps = linedepps + banddepps
 
-        fvertical = InterpolatedUnivariateSpline(xvalues, linedepps, k=2)
-        # create interpolated values with 0.05m accuracy
-        xinterp = np.arange(0, self.maxdistance + 0.05, 0.05)
-        yinterp = fvertical(xinterp)
-        return xvalues, linedepps, xinterp, yinterp
+            fvertical = InterpolatedUnivariateSpline(xvalues, linedepps, k=2)
+            yinterp += fvertical(xinterp)
+
+        return xinterp, yinterp
 
     def horizontalsafety(self, phi):
         sum_ = 0
