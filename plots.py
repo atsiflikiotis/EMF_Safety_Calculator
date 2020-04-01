@@ -135,8 +135,8 @@ def horizontalplot(obj):
 
     obj.maxdistance = int(np.ceil(np.max(rmvalues)))
     obj.maxphi = int(np.argmax(rmvalues))
-    if len(obj.directionbox.get()) == 0:
-        obj.directionbox.insert(0, obj.maxphi)
+    # if len(obj.directionbox.get()) == 0:
+    #     obj.directionbox.insert(0, obj.maxphi)
 
     cursor = mplcursors.cursor(sethor, hover=True)
 
