@@ -101,8 +101,8 @@ class SectorFrame(ttk.Labelframe):
                                        command=self.updatetotpowers)
         powerunitrb2 = ttk.Radiobutton(powerunitframe, text="Watt", variable=self.powerunitvar, value='Power (Watt):',
                                        command=self.updatetotpowers)
-        if parentsector == None:
-            self.powerunitvar.set('Power (dBm):')
+        if parentsector is None:
+            self.powerunitvar.set('Power (Watt):')
         else:
             self.powerunitvar.set(mainclass.sector1.powerunitvar.get())
 
@@ -153,7 +153,7 @@ class SectorFrame(ttk.Labelframe):
             self.carrierbox[bands[i]].grid(row=7, column=i + 1, padx=(7, 7))
             self.carrierbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.carrierbox[bands[i]].delete(0, tk.END)
-            if parentsector == None:
+            if parentsector is None:
                 self.carrierbox[bands[i]].insert(0, 2)
             else:
                 self.carrierbox[bands[i]].insert(0, mainclass.sector1.carrierbox[bands[i]].get())
@@ -167,8 +167,8 @@ class SectorFrame(ttk.Labelframe):
             self.powerbox[bands[i]].grid(row=8, column=i + 1, padx=(7, 7))
             self.powerbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.powerbox[bands[i]].delete(0, tk.END)
-            if parentsector == None:
-                self.powerbox[bands[i]].insert(0, 46)
+            if parentsector is None:
+                self.powerbox[bands[i]].insert(0, 40)
             else:
                 self.powerbox[bands[i]].insert(0, mainclass.sector1.powerbox[bands[i]].get())
 
@@ -181,7 +181,7 @@ class SectorFrame(ttk.Labelframe):
             self.losesbox[bands[i]].grid(row=9, column=i + 1, padx=(7, 7))
             self.losesbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.losesbox[bands[i]].delete(0, tk.END)
-            if parentsector == None:
+            if parentsector is None:
                 self.losesbox[bands[i]].insert(0, 1)
             else:
                 self.losesbox[bands[i]].insert(0, mainclass.sector1.losesbox[bands[i]].get())
@@ -195,7 +195,7 @@ class SectorFrame(ttk.Labelframe):
             self.utilbox[bands[i]].grid(row=10, column=i + 1, padx=(7, 7))
             self.utilbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.utilbox[bands[i]].delete(0, tk.END)
-            if parentsector == None:
+            if parentsector is None:
                 self.utilbox[bands[i]].insert(0, 85)
             else:
                 self.utilbox[bands[i]].insert(0, mainclass.sector1.utilbox[bands[i]].get())
@@ -239,7 +239,7 @@ class SectorFrame(ttk.Labelframe):
             submit.grid(row=0, column=0, sticky='ns')
 
         # fill default values
-        if parentsector == None:
+        if parentsector is None:
             self.antcombobox.current(0)
             self.azimtext.insert(0, 0)
             self.mechtilttext.insert(0, 0)
@@ -251,11 +251,6 @@ class SectorFrame(ttk.Labelframe):
             self.mechtilttext.insert(0, mainclass.sector1.mechtilttext.get())
             self.midheighttext.insert(0, mainclass.sector1.midheighttext.get())
             self.antcombobox.event_generate("<<ComboboxSelected>>", when='tail')
-        # for i in range(lenbands):
-        #     if parentsector == None:
-        #         pass
-        #     else:
-        #         self.tiltsbox[bands[i]].current(mainclass.sector1.tiltsbox[bands[i]].current())
 
     # METHODS###################################################
 
@@ -287,10 +282,13 @@ class SectorFrame(ttk.Labelframe):
                 # binding events in lambda, evnt keyword is used only in lambda line and no in function args
 
                 # self.tiltsbox[bands[i]].event_generate('<<Button-1>>')  #not working why?
-                if self.parentsector == None:
+                if self.parentsector is None:
                     self.tiltsbox[bands[i]].current(0)
                 else:
-                    self.tiltsbox[bands[i]].current(self.mainclass.sector1.tiltsbox[bands[i]].current())
+                    if self.antennasel == self.mainclass.sector1.antcombobox.get():
+                        self.tiltsbox[bands[i]].current(self.mainclass.sector1.tiltsbox[bands[i]].current())
+                    else:
+                        self.tiltsbox[bands[i]].current(0)
             else:
                 self.tiltsbox[bands[i]].config(values=['NA'], state='disabled')
 
