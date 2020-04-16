@@ -556,7 +556,7 @@ class Main(ttk.Frame):
             if self.evallevel > maxevallevel:
                 tl.popupmessage(self.master, "Evaluation level error", 
                                 f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting "
-                                f"evaluation level to maximum valid value = {maxevallevel}m.", 200)
+                                f"evaluation level to maximum valid value = {maxevallevel:.3f}m.", 200)
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
@@ -731,17 +731,20 @@ class Main(ttk.Frame):
 
     def plotlines(self):
         self.plotlinesbtn.config(state='disabled', text='Progressing..')
+        try:
+            self.get_grid()
 
-        self.get_grid()
+            if sum(self.sector1.totpower.values()):
+                plots.horizontalplot(self)
+                plots.verticalplot(self)
+            else:
+                tl.popupmessage(self.master, 'No power',
+                                "Power error: Enter values for sector 1 that produce total power greater than 0.", 200)
 
-        if sum(self.sector1.totpower.values()):
-            plots.horizontalplot(self)
-            plots.verticalplot(self)
-        else:
-            tl.popupmessage(self.master, 'No power',
-                            "Power error: Enter values for sector 1 that produce total power greater than 0.", 200)
+            self.plotlinesbtn.config(state='normal', text='Plot Lines')
+        except ValueError:
+            self.plotlinesbtn.config(state='normal', text='Plot Lines')
 
-        self.plotlinesbtn.config(state='normal', text='Plot Lines')
 
     def verticalvalues(self, angle, level):
 
@@ -1006,16 +1009,23 @@ class Main(ttk.Frame):
         self.confirmbspositionbtn.config(state='disabled')
 
     def getsector1(self):
-        if len(self.sector1.azimtext.get()) == 0 or len(self.sector1.mechtilttext.get()) == 0 or len(
-                self.sector1.midheighttext.get()) == 0:
-            tl.popupmessage(self.master, 'Error', 'Please fill all required values then submit antenna.', 250)
+        try:
+            self.sector1.azimuth = int(self.sector1.azimtext.get())
+            self.sector1.mechtilt = int(self.sector1.mechtilttext.get())
+            self.sector1.antheight = float(self.sector1.midheighttext.get())
+        except ValueError:
+            tl.popupmessage(self.master, 'Error', 'Please fill all entries with valid values then submit antenna.', 250)
+            raise ValueError
         else:
             # final values
+            if self.sector1.azimuth < 0:
+                self.sector1.azimuth += 360
             self.sector1.azimuth = int(self.sector1.azimtext.get())
             if self.sector1.azimuth < 0:
                 self.sector1.azimuth += 360
             self.sector1.mechtilt = int(self.sector1.mechtilttext.get())
             self.sector1.antheight = float(self.sector1.midheighttext.get())
+
             for i in range(len(bands)):
                 self.sector1.totpower[bands[i]] = self.sector1.totpowervar[bands[i]].get()
                 # split horizontal and vertical after roll to vertical

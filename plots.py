@@ -185,7 +185,8 @@ def horizontalplot(obj):
         obj.horplotax.plot([np.deg2rad(phi2), np.deg2rad(phi2)], [0, ymax], color="green", linewidth=2)
         textvar2 = 'Safety distance from {}° to {}°:\n{:.1f}m'.format(phi1, phi2, localrm)
         obj.horplotax.text(-0.7, 0.9, textvar2, transform=obj.horplotax.transAxes, fontsize=11)
-        
+
+
 def contourplot(obj):
     obj.contourplotbtn.config(state='disabled', text='Progressing..')
     obj.reget_grid()
