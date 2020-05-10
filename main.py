@@ -14,13 +14,12 @@ from scipy.interpolate import RectBivariateSpline
 import Antennas_DB as AntDB
 import SectorFrame as SecFrame
 import plots
+from tkinter.messagebox import showerror, showwarning
 import toplevelwindow as tl
 from validuser import validation
 
-
 version = 'v2.0 2020'
 bands = AntDB.bands
-conn = AntDB.conn
 
 
 def antennasbrowser():
@@ -543,7 +542,7 @@ class Main(ttk.Frame):
         try:
             self.reflevel = float(self.reflevelbox.get())
         except ValueError:
-            tl.popupmessage(self.master, "Value error", "Invalid number for reference level, reverting to 0 value", 200)
+            showwarning("Value error", "Invalid number for reference level, reverting to 0 value")
             self.reflevel = 0
             self.reflevelbox.delete(0, tk.END)
             self.reflevelbox.insert(0, 0)
@@ -554,25 +553,23 @@ class Main(ttk.Frame):
         try:
             self.evallevel = float(self.evallevelbox.get())
             if self.evallevel > maxevallevel:
-                tl.popupmessage(self.master, "Evaluation level error", 
+                showerror("Evaluation level error",
                                 f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting "
-                                f"evaluation level to maximum valid value = {maxevallevel:.3f}m.", 200)
+                                f"evaluation level to maximum valid value = {maxevallevel:.3f}m.")
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
         except ValueError:
             if self.reflevel <= maxevallevel:
-                tl.popupmessage(self.master, "Value error", 
-                                f"Invalid number for evaluation level, setting equal to reference level = "
-                                f"{self.reflevel}m", 200)
+                showerror("Value error", f"Invalid number for evaluation level, setting equal to reference level = " 
+                                         f"{self.reflevel}m")
 
                 self.evallevel = self.reflevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, self.reflevel)
             else:
-                tl.popupmessage(self.master, "Value error", 
-                                f"Invalid number for evaluation level, setting equal to "
-                                f"maximum valid evaluation level value: {maxevallevel}m", 200)
+                showerror("Value error", f"Invalid number for evaluation level, setting equal to " 
+                                         f"maximum valid evaluation level value: {maxevallevel}m")
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
@@ -590,7 +587,7 @@ class Main(ttk.Frame):
         try:
             self.reflevel = float(self.reflevelbox.get())
         except ValueError:
-            tl.popupmessage(self.master, "Value error", "Invalid number for reference level, reverting to 0 value", 200)
+            showwarning("Value error", "Invalid number for reference level, reverting to 0 value")
             self.reflevel = 0
             self.reflevelbox.delete(0, tk.END)
             self.reflevelbox.insert(0, 0)
@@ -603,18 +600,22 @@ class Main(ttk.Frame):
         try:
             self.evallevel = float(self.evallevel2box.get())
             if self.evallevel > maxevallevel:
-                tl.popupmessage(self.master, "Evaluation level error", f"Evaluation level is not low enough to perfmorm vertical pattern analysis, setting evaluation level to maximum valid value = {maxevallevel}m.", 200)
+                showwarning("Evaluation level error", f"Evaluation level is not low enough to perfmorm "
+                                                      f"vertical pattern analysis, setting evaluation "
+                                                      f"level to maximum valid value = {maxevallevel}m.")
                 self.evallevel = maxevallevel
                 self.evallevel2box.delete(0, tk.END)
                 self.evallevel2box.insert(0, maxevallevel)
         except ValueError:
             if self.reflevel <= maxevallevel:
-                tl.popupmessage(self.master, "Value error", f"Invalid number for evaluation level, setting equal to reference level value = {self.reflevel}m", 200)
+                showwarning("Value error", f"Invalid number for evaluation level, setting equal to "
+                                           f"reference level value = {self.reflevel}m")
                 self.evallevel = self.reflevel
                 self.evallevel2box.delete(0, tk.END)
                 self.evallevel2box.insert(0, self.reflevel)
             else:
-                tl.popupmessage(self.master, "Value error", "Invalid number for evaluation level, setting equal to maximum valid evaluation level value = {maxevallevel}m", 200)
+                showwarning("Value error", "Invalid number for evaluation level, setting equal to maximum valid "
+                                           "evaluation level value = {maxevallevel}m")
                 self.evallevel = maxevallevel
                 self.evallevel2box.delete(0, tk.END)
                 self.evallevel2box.insert(0, maxevallevel)
@@ -738,8 +739,7 @@ class Main(ttk.Frame):
                 plots.horizontalplot(self)
                 plots.verticalplot(self)
             else:
-                tl.popupmessage(self.master, 'No power',
-                                "Power error: Enter values for sector 1 that produce total power greater than 0.", 200)
+                showerror('No power', "Power error: Enter values for sector 1 that produce total power greater than 0.")
 
             self.plotlinesbtn.config(state='normal', text='Plot Lines')
         except ValueError:
@@ -879,7 +879,7 @@ class Main(ttk.Frame):
     def scaleimagedistance(self):
         distab = self.distentry.get()
         if len(distab) == 0 or float(distab) <= 0:
-            tl.popupmessage(self.master, 'Error', 'You have to enter a valid distance for points A to B', 200)
+            showerror('Error', 'You have to enter a valid distance for points A to B')
         else:
             global coords
             pointsdistance = np.sqrt((coords[0][0] - coords[1][0]) ** 2 + (coords[0][1] - coords[1][1]) ** 2)
@@ -1014,7 +1014,7 @@ class Main(ttk.Frame):
             self.sector1.mechtilt = int(self.sector1.mechtilttext.get())
             self.sector1.antheight = float(self.sector1.midheighttext.get())
         except ValueError:
-            tl.popupmessage(self.master, 'Error', 'Please fill all entries with valid values then submit antenna.', 250)
+            showerror('Error', 'Please fill all entries with valid values then submit antenna.')
             raise ValueError
         else:
             # final values

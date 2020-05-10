@@ -2,15 +2,12 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import math as math
 import numpy as np
-import os as os
 import Antennas_DB as AntDB
-
+import pandas as pd
 
 bands = AntDB.bands
 lenbands = len(bands)
-conn = AntDB.conn
-patternspath = AntDB.patternspath
-
+antennas = AntDB.antennas
 
 class SectorFrame(ttk.Labelframe):
     def __init__(self, master, sector, mainclass, parentsector=None, *args, **kwargs):
@@ -19,7 +16,7 @@ class SectorFrame(ttk.Labelframe):
         self.sector = sector
         self.parentsector = parentsector
         self.mainclass = mainclass  # for access inside other methods
-        self.cursor = conn.cursor()
+        # self.cursor = conn.cursor()
 
         # self.rowconfigure(0, weight=1)
         # self.rowconfigure(1, weight=1)
@@ -55,10 +52,7 @@ class SectorFrame(ttk.Labelframe):
 
         # antenna combobox
         # get list of antennas
-        antlist = []
-        templist = self.cursor.execute('SELECT DISTINCT name FROM antennas ORDER BY name')
-        for name in templist:
-            antlist.append(name[0])
+        antlist = antennas.index.unique(level='Antenna').tolist()
 
         self.antcombobox = ttk.Combobox(frame1, values=antlist, width=30, state='readonly')
         self.antcombobox.grid(row=1, column=0, sticky='nw', columnspan=5, padx=5)
@@ -258,23 +252,22 @@ class SectorFrame(ttk.Labelframe):
         # when antenna selected, fill tilts
         self.antennasel = self.antcombobox.get()
         # get antenna supporting bands and fill textboxes with tilts
-        cursor = self.cursor.execute('SELECT DISTINCT band FROM antennas WHERE name=? ORDER BY band',
-                                     (self.antennasel,))
-
-        self.supbandslist = []
-        for val in cursor:
-            self.supbandslist.append(val[0])
+        # cursor = self.cursor.execute('SELECT DISTINCT band FROM antennas WHERE name=? ORDER BY band',
+        #                              (self.antennasel,))
+        self.supbandslist = antennas.loc[self.antennasel].index.unique(level='Band').tolist()
 
         # get supported tilts for each band or fill with 'NA' label in frame row 4
         for i in range(lenbands):
             if bands[i] in self.supbandslist:
-                self.tiltslist[bands[i]] = []
-                # get tilts values
-                cursor = self.cursor.execute('SELECT DISTINCT tilt FROM antennas WHERE name=? AND band=? ORDER BY tilt',
-                                             (self.antennasel, bands[i]))
+                # self.tiltslist[bands[i]] = []
+                # cursor = self.cursor.execute('SELECT DISTINCT tilt FROM antennas WHERE name=? AND band=? ORDER BY tilt',
+                #                              (self.antennasel, bands[i]))
 
-                for val in cursor:
-                    self.tiltslist[bands[i]].append(val[0])
+                # for val in cursor:
+                #     self.tiltslist[bands[i]].append(val[0])
+
+                # get tilts values
+                self.tiltslist[bands[i]] = antennas.loc[pd.IndexSlice[self.antennasel, bands[i], :]].index.unique(level='Tilt').tolist()
                 # put a spinbox with list of supporting tilts
                 self.tiltsbox[bands[i]].config(values=self.tiltslist[bands[i]], state='readonly')
 
@@ -354,11 +347,14 @@ class SectorFrame(ttk.Labelframe):
     def updategains(self):
         for i in range(lenbands):
             if bands[i] in self.supbandslist:
-                # get gain from antennasel and tilt
                 tilt = float(self.tiltsbox[bands[i]].get())
-                cursor = self.cursor.execute('SELECT gain FROM antennas WHERE name=? AND band=? AND tilt=?',
-                                             (self.antennasel, bands[i], tilt)).fetchone()
-                gain = cursor[0]
+                # get gain from antennasel and tilt
+
+                # cursor = self.cursor.execute('SELECT gain FROM antennas WHERE name=? AND band=? AND tilt=?',
+                #                              (self.antennasel, bands[i], tilt)).fetchone()
+                # gain = cursor[0]
+
+                gain = antennas.loc[self.antennasel, bands[i], tilt]['Gain']
                 self.gainsvar[bands[i]].set("{0:.2f}".format(gain))
             else:
                 self.gainsvar[bands[i]].set('NA')
@@ -372,35 +368,20 @@ class SectorFrame(ttk.Labelframe):
         self.totaleirpvar.set("{0:.2f}".format(sum))
 
     def getpatterns(self):
-        bandsnotfound = []
         for i in range(lenbands):
             if bands[i] in self.supbandslist:
                 tilt = float(self.tiltsbox[bands[i]].get())
-                cursor = self.cursor.execute('SELECT pattern FROM antennas WHERE name=? AND band=? AND tilt=?',
-                                             (self.antennasel, bands[i], tilt)).fetchone()
-                file = patternspath + str(cursor[0])
-                try:
-                    ####decimal separator warning!!!!!!!!!!
-                    # self.patterns[bands[i]] = np.asarray(pd.read_csv(file, delimiter=';', decimal=',', header=None))
-                    # if decimal is '.' (true in version when all attoll patterns are extracted) then no pandas is needed:
-                    self.patterns[bands[i]] = np.genfromtxt(file, delimiter=';')
-                except:
-                    bandsnotfound.append(bands[i])
+                # cursor = self.cursor.execute('SELECT pattern FROM antennas WHERE name=? AND band=? AND tilt=?',
+                #                              (self.antennasel, bands[i], tilt)).fetchone()
+                # file = patternspath + str(cursor[0])
+
+                ####decimal separator warning!!
+                # self.patterns[bands[i]] = np.asarray(pd.read_csv(file, delimiter=';', decimal=',', header=None))
+                # if decimal is '.' (true in version when all attoll patterns are extracted) then no pandas is needed:
+                # self.patterns[bands[i]] = np.genfromtxt(file, delimiter=';')
+                self.patterns[bands[i]] = antennas.loc[(self.antennasel, bands[i], tilt)]['Pattern']
             else:
                 self.patterns[bands[i]] = None
-        if len(bandsnotfound) > 0:
-            newwindow = tk.Toplevel()
-            newwindow.iconbitmap('icon.ico')
-            newwindow.title('Bands not found')
-            string = []
-            for j in bandsnotfound:
-                string.append(str(j) + ', ')
-            message = 'Patterns for bands: {} not found in patterns folder, please delete these bands or check files.'.format(
-                string)
-            messagelbl = tk.Message(newwindow, text=message, width=400)
-            messagelbl.grid(row=0, column=0, sticky='ns')
-            btn = ttk.Button(newwindow, text='OK', command=lambda: newwindow.destroy())
-            btn.grid(row=1, column=0)
 
     def submitantenna(self):
 
@@ -412,14 +393,6 @@ class SectorFrame(ttk.Labelframe):
             messagelbl.grid(row=0, column=0, sticky='ns')
             btn = ttk.Button(newwindow, text='OK', command=lambda: newwindow.destroy())
             btn.grid(row=1, column=0)
-        #        elif int(self.azimtext.get())<0 or int(self.mechtilttext.get())<0 or float(self.midheighttext.get())<=2:
-        #            newwindow = tk.Toplevel()
-        #            newwindow.iconbitmap('icon.ico')
-        #            message='Please validate input values (anntenna height must be >2m).'
-        #            messagelbl = tk.Message(newwindow, text=message, width=400)
-        #            messagelbl.grid(row=0, column=0, sticky='ns')
-        #            btn = ttk.Button(newwindow, text='OK', command= lambda : newwindow.destroy())
-        #            btn.grid(row=1, column=0)
         else:
             # final values
             self.azimuth = int(self.azimtext.get())

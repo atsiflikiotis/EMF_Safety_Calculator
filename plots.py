@@ -1,7 +1,7 @@
 import mplcursors
 import numpy as np
 import tkinter as tk
-import toplevelwindow as tl
+from tkinter.messagebox import showerror
 
 
 def invertimage(img):
@@ -234,15 +234,13 @@ def contourplot(obj):
             obj.contourplotax.imshow(lowlevels, interpolation='none', cmap='Greens',
                                      extent=limits, alpha=0.3)
         except MemoryError:
-            tl.popupmessage(obj.master, 
-                            "Memory Error", "There was a memory error, please restart program.", 220)
+            showerror("Memory Error", "There was a memory error, please restart program.")
 
     try:
         layer2 = obj.contourplotax.imshow(customval, interpolation='none', cmap='YlOrRd',
                                        extent=limits, alpha=0.7, vmin=threshold, vmax=1)
     except MemoryError:
-        tl.popupmessage(obj.master, 
-                        "Memory Error", "There was a memory error, please restart program.", 220)
+        showerror("Memory Error", "There was a memory error, please restart program.")
 
     tickvalues = np.linspace(threshold, 1, 5)
     ticklabels = []

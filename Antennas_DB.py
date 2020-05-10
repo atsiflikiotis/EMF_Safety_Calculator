@@ -1,13 +1,10 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import logging
-import os
-import sqlite3
+from readdatabase import readdb
+import pandas as pd
 
-
-conn = sqlite3.connect('antennas.sql')
+antennas = readdb()
 bands = [700, 800, 900, 1800, 2100, 2600, 3500]
-patternspath = os.getcwd() + '\\patterns\\'
 
 
 class AntennasDB(tk.Frame):
@@ -15,14 +12,14 @@ class AntennasDB(tk.Frame):
 
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
-        self.cursor = conn.cursor()
+        # self.cursor = conn.cursor()
         self.master = master
         self.master.title('Antennas Database')
         self.master.geometry('650x450')
         #        self.master.configure(background='#D8D8D8')
 
-        logging.basicConfig(filename='antennas.log', filemode='a', level=logging.INFO,
-                            format='%(asctime)s - %(message)s', )
+        # logging.basicConfig(filename='antennas.log', filemode='a', level=logging.INFO,
+        #                     format='%(asctime)s - %(message)s', )
 
         s = ttk.Style()
         s.configure('my.TButton', font=(None, 8))
@@ -140,7 +137,8 @@ class AntennasDB(tk.Frame):
 
     # OTHER METHODS#################################################################################
     def fillantennas(self):
-        antlist = self.cursor.execute('SELECT DISTINCT name FROM antennas ORDER BY name')
+        # antlist = self.cursor.execute('SELECT DISTINCT name FROM antennas ORDER BY name')
+        antlist = antennas.index.unique(level='Antenna').tolist()
         for name in antlist:
             self.antlb.insert(tk.END, name[0])
 
@@ -154,8 +152,9 @@ class AntennasDB(tk.Frame):
 
             antidx = self.antlb.curselection()[0]
             self.antennasel = self.antlb.get(antidx)
-            tiltlist = self.cursor.execute('SELECT DISTINCT tilt FROM antennas WHERE name = ? ORDER BY tilt',
-                                           (self.antennasel,))
+            # tiltlist = self.cursor.execute('SELECT DISTINCT tilt FROM antennas WHERE name = ? ORDER BY tilt',
+            #                                (self.antennasel,))
+            tiltlist = antennas.loc[self.antennasel].index.unique(level='Tilt').tolist()
             for val in tiltlist:
                 self.tiltlb.insert(tk.END, val[0])
 
@@ -167,20 +166,22 @@ class AntennasDB(tk.Frame):
             tiltidx = self.tiltlb.curselection()[0]
             self.tiltsel = self.tiltlb.get(tiltidx)
 
-            supbandstemp = self.cursor.execute(
-                'SELECT DISTINCT band FROM antennas WHERE name=? AND tilt=? ORDER BY band',
-                (self.antennasel, self.tiltsel)).fetchall()
-            supbandslist = [] * len(supbandstemp)
-            for val in supbandstemp:
-                supbandslist.append(val[0])
+            # supbandstemp = self.cursor.execute(
+            #     'SELECT DISTINCT band FROM antennas WHERE name=? AND tilt=? ORDER BY band',
+            #     (self.antennasel, self.tiltsel)).fetchall()
+            supbandslist = antennas.loc[pd.IndexSlice[self.antennasel, :, self.tiltsel]].index.unique(level='Band').tolist()
+            # supbandslist = [] * len(supbandstemp)
+            # for val in supbandstemp:
+            #     supbandslist.append(val[0])
 
             self.gains = dict.fromkeys(supbandslist)  # dictionary with bands as keys and gains as values
 
             for i in range(len(bands)):
                 self.tb[i].delete(0, tk.END)
                 if bands[i] in supbandslist:
-                    gain = self.cursor.execute('SELECT gain FROM antennas WHERE name=? AND tilt=? AND band=?',
-                                               (self.antennasel, self.tiltsel, bands[i])).fetchone()[0]
+                    gain = antennas.loc[(self.antennasel, bands[i], self.tiltsel)]['Gain']
+                    # gain = self.cursor.execute('SELECT gain FROM antennas WHERE name=? AND tilt=? AND band=?',
+                    #                            (self.antennasel, self.tiltsel, bands[i])).fetchone()[0]
                     self.gains[bands[i]] = gain
                 else:
                     self.gains[bands[i]] = 'NA'

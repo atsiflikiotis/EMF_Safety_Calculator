@@ -2,10 +2,15 @@
 
 EMF Safety Calculator takes as input the technical specifications of a cellular mobile station (antennas type/height, frequency bands in which the antennas operate, power etc), and calculates the exposure level (normalized power density levels per reference levels).
 
-Run "main.py" to start the GUI and use the program. You need also all other function included in the repo to properly run it.
+# Usage
+Run "main.py" to start the GUI and use the program. You need also all other helper .py files included in the repo to properly run it.
 
-Antennas database is a SQL Database that stores antennas names and supporting tilts and operating bands. Patterns are imported from csv files, with two columns representing horizontal and vertical pattern accordingly. Scirpt "insert_Antennas_to_DB" can be used to insert more antennas to DB, selecting a folder with pattern (csv) files with standard filename format "band_antenn_tilt_gain.csv". 
-Patterns folder can be specified in "Antennas_DB.py" file.
+Antennas database is a pandas dataframe, that stores antennas names and supporting tilts and operating bands.
+
+You can create (or insert new antennas into) a database, running "create_antennas_df.py' file, after ytou specify the location of .csv files that correspond to radiation pattern of each antenna).
+
+Pattern files should be .csv files, with column 0 representing the horizontal and column 1 the vertical pattern.
+
 
 A function in validuser.py is included if you want to define a user authentication process.
 
