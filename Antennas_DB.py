@@ -10,6 +10,7 @@ from pathlib import Path
 antennas = readdb()
 bands = [700, 800, 900, 1800, 2100, 2600, 3500]
 
+
 class AntennasDB(tk.Frame):
     backupflag = 0
 
@@ -160,7 +161,8 @@ class AntennasDB(tk.Frame):
             # supbandstemp = self.cursor.execute(
             #     'SELECT DISTINCT band FROM antennas WHERE name=? AND tilt=? ORDER BY band',
             #     (self.antennasel, self.tiltsel)).fetchall()
-            supbandslist = antennas.loc[pd.IndexSlice[self.antennasel, :, self.tiltsel]].index.unique(level='Band').tolist()
+            supbandslist = antennas.loc[pd.IndexSlice[self.antennasel, :, self.tiltsel]].index.unique(
+                level='Band').tolist()
             # supbandslist = [] * len(supbandstemp)
             # for val in supbandstemp:
             #     supbandslist.append(val[0])
@@ -192,7 +194,7 @@ class AntennasDB(tk.Frame):
         tilt = float(self.tiltbox.get())
         defname = f"{band}_{antenna}_{tilt}"
         fpath = tkinter.filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG image", '*.png')],
-                                                initialdir=Path.cwd(), title="Save as file", initialfile=defname)
+                                                     initialdir=Path.cwd(), title="Save as file", initialfile=defname)
 
         fig = plt.Figure(figsize=(12, 8))
         horax = fig.add_subplot(121, polar=True)
@@ -208,14 +210,8 @@ class AntennasDB(tk.Frame):
         verax.plot(np.linspace(0, 2 * np.pi, 361), vernorm)
         verax.set_theta_direction(-1)
         horax.set_theta_direction(-1)
-        horax.set_theta_offset(np.pi/2)
+        horax.set_theta_offset(np.pi / 2)
+        verax.set_rticks([-3, -10, -20, -30, -40])
+        horax.set_rticks([-3, -10, -20, -30, -40])
         fig.suptitle(f"{defname}, Gain={gain:.2f}dBi")
         fig.savefig(fpath)
-
-
-
-
-
-
-
-
