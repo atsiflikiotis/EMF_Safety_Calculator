@@ -18,7 +18,7 @@ from tkinter.messagebox import showerror, showwarning
 import toplevelwindow as tl
 from validuser import validation
 
-version = 'v2.0 2020'
+version = 'v2.1.0 2020'
 bands = AntDB.bands
 
 
@@ -692,10 +692,11 @@ class Main(ttk.Frame):
 
         sector.theta[maskbehind] = 180 - sector.theta[maskbehind]
 
-        sector.theta = sector.theta - sector.mechtilt
+        # change theta values due to mechanical tilt
+        sector.theta[~maskbehind] = sector.theta[~maskbehind] - sector.mechtilt
+        sector.theta[maskbehind] = sector.theta[maskbehind] + sector.mechtilt
 
         sector.theta[sector.theta < 0] = sector.theta[sector.theta < 0] + 360
-
 
         sector.R = np.sqrt(sector.height ** 2 + self.rho ** 2)
         sector.depps = np.full(self.size, 0.0)
@@ -745,7 +746,6 @@ class Main(ttk.Frame):
         except ValueError:
             self.plotlinesbtn.config(state='normal', text='Plot Lines')
 
-
     def verticalvalues(self, angle, level):
 
         if angle < 0:
@@ -772,7 +772,18 @@ class Main(ttk.Frame):
                 thetaxmax = int(np.ceil(thetaxend))
                 xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
                 H = np.full_like(xvalues, Ho)
-            sectortheta = np.round(np.arctan2(H, xvalues) * 180 / np.pi).astype(int) - sector.mechtilt
+
+            # get theta values according to mech tilt
+            sectortheta = np.round(np.arctan2(H, xvalues) * 180 / np.pi).astype(int)
+            # if front of antenna, -mechtilt, elsif behind has to be +mechtilt
+            relangle = angle - sector.azimuth
+            if 90 < relangle < 270:
+                # behind antenna
+                sectortheta = sectortheta + sector.mechtilt
+            else:
+                # inf front of antenna
+                sectortheta = sectortheta - sector.mechtilt
+
             linedepps = np.zeros_like(xvalues)
             R = np.sqrt(H ** 2 + xvalues ** 2)
             for band in bands:
@@ -781,7 +792,6 @@ class Main(ttk.Frame):
                 if sector.totpower[band] > 0:
                     # initialize with zeros
                     powerdensity = np.zeros_like(xvalues)
-                    banddepps = np.zeros_like(xvalues)
                     gainatten = np.zeros_like(xvalues)
                     for i in range(len(sectortheta)):
                         gainatten[i] = sector.gain[band] - sector.horizontal[band][sector.azimuth - angle] - \
