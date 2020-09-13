@@ -690,7 +690,8 @@ class Main(ttk.Frame):
         sector.phi = np.round(sector.phi, 1)
         sector.theta = np.round(np.arctan2(sector.height, self.rho) * 180 / np.pi, 1)
 
-        sector.theta[maskbehind] = 180 - sector.theta[maskbehind]
+        # removed at 13/09/2020, behind the antenna points are already have attenuated gain due to horizontal pattern
+        # sector.theta[maskbehind] = 180 - sector.theta[maskbehind]
 
         # change theta values due to mechanical tilt
         sector.theta[~maskbehind] = sector.theta[~maskbehind] - sector.mechtilt
