@@ -196,9 +196,10 @@ class AntennasDB(tk.Frame):
         fpath = tkinter.filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG image", '*.png')],
                                                      initialdir=Path.cwd(), title="Save as file", initialfile=defname)
 
-        fig = plt.Figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(10, 6))
         horax = fig.add_subplot(121, polar=True)
         verax = fig.add_subplot(122, polar=True)
+        fig.tight_layout()
 
         row = antennas.loc[(antenna, band, tilt)]
         horizontal = row['Pattern'][:, 0]
@@ -214,4 +215,5 @@ class AntennasDB(tk.Frame):
         verax.set_rticks([-3, -10, -20, -30, -40])
         horax.set_rticks([-3, -10, -20, -30, -40])
         fig.suptitle(f"{defname}, Gain={gain:.2f}dBi")
+
         fig.savefig(fpath)
