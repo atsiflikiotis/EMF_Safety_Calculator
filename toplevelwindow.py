@@ -6,6 +6,7 @@ class popupmessage(tk.Toplevel):
         super().__init__(*args, **kwargs)
         self.title = title
         self.iconbitmap('icon.ico')
+        self.grab_set()
         x = masterwindow.winfo_x()
         y = masterwindow.winfo_y()
         self.geometry("+%d+%d" % (x + 100, y + 200))

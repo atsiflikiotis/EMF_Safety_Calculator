@@ -189,6 +189,7 @@ def horizontalplot(obj):
 
 def contourplot(obj):
     obj.contourplotbtn.config(state='disabled', text='Progressing..')
+    obj.update_idletasks()
     obj.reget_grid()
 
     obj.totaldeppsgrid()

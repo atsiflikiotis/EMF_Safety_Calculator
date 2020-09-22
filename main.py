@@ -24,6 +24,7 @@ bands = AntDB.bands
 
 def antennasbrowser():
     antennaswindow = tk.Toplevel()
+    antennaswindow.grab_set()
     antennaswindow.title('Antennas Database')
     antennaswindow.iconbitmap('icon.ico')
     x = root.winfo_x()
@@ -423,6 +424,7 @@ class Main(ttk.Frame):
         count = len(self.sectorslist)
 
         newwindow = tk.Toplevel()
+        newwindow.grab_set()
         x = self.master.winfo_x()
         y = self.master.winfo_y()
         newwindow.geometry("+%d+%d" % (x+400, y+300))
@@ -433,6 +435,7 @@ class Main(ttk.Frame):
 
     def opensettings(self):
         self.settingswindow = tk.Toplevel()
+        self.settingswindow.grab_set()
         self.settingswindow.title('Settings')
         x = self.master.winfo_x()
         y = self.master.winfo_y()
@@ -1052,6 +1055,7 @@ def quit_me():
 
 def about():
     aboutwindow = tk.Toplevel()
+    aboutwindow.grab_set()
     aboutwindow.title('Licence')
     aboutwindow.iconbitmap('icon.ico')
     x = root.winfo_x()
