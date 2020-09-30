@@ -9,42 +9,14 @@ bands = AntDB.bands
 lenbands = len(bands)
 antennas = AntDB.antennas
 
+
 class SectorFrame(ttk.Labelframe):
-    def __init__(self, master, sector, mainclass, parentsector=None, *args, **kwargs):
+    def __init__(self, master, sector, mainclass, parentsector=None, **kwargs):
         super().__init__(master, text='Sector {0}'.format(sector), **kwargs)
         self.master = master
-        self.sector = sector
         self.parentsector = parentsector
+        self.sector = sector    #sector id (unique integer)
         self.mainclass = mainclass  # for access inside other methods
-        # self.cursor = conn.cursor()
-
-        # self.rowconfigure(0, weight=1)
-        # self.rowconfigure(1, weight=1)
-        # self.rowconfigure(2, weight=1)
-        # self.rowconfigure(3, weight=1)
-        # self.rowconfigure(4, weight=1)
-        # self.rowconfigure(5, weight=1)
-        # self.rowconfigure(6, weight=1)
-        # self.rowconfigure(7, weight=1)
-        # self.rowconfigure(8, weight=1)
-        # self.rowconfigure(9, weight=1)
-        # self.rowconfigure(10, weight=1)
-        # self.rowconfigure(11, weight=1)
-        # self.rowconfigure(12, weight=1)
-
-        # self.columnconfigure(0, weight=1)
-        # self.columnconfigure(1, weight=1)
-        # self.columnconfigure(2, weight=1)
-        # self.columnconfigure(3, weight=1)
-        # self.columnconfigure(4, weight=1)
-        # self.columnconfigure(5, weight=1)
-        # self.columnconfigure(6, weight=1)
-        # self.columnconfigure(7, weight=1)
-        # self.columnconfigure(8, weight=1)
-        # self.columnconfigure(9, weight=1)
-        # self.columnconfigure(10, weight=1)
-        # self.columnconfigure(11, weight=1)
-        # self.columnconfigure(12, weight=1)
 
         # Antenna ComboBox, azimuth, tilt and height frame
         frame1 = ttk.Frame(self)
@@ -95,7 +67,7 @@ class SectorFrame(ttk.Labelframe):
                                        command=self.updatetotpowers)
         powerunitrb2 = ttk.Radiobutton(powerunitframe, text="Watt", variable=self.powerunitvar, value='Power (Watt):',
                                        command=self.updatetotpowers)
-        if parentsector is None:
+        if self.parentsector is None:
             self.powerunitvar.set('Power (Watt):')
         else:
             self.powerunitvar.set(mainclass.sector1.powerunitvar.get())
@@ -147,7 +119,7 @@ class SectorFrame(ttk.Labelframe):
             self.carrierbox[bands[i]].grid(row=7, column=i + 1, padx=(7, 7))
             self.carrierbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.carrierbox[bands[i]].delete(0, tk.END)
-            if parentsector is None:
+            if self.parentsector is None:
                 self.carrierbox[bands[i]].insert(0, 2)
             else:
                 self.carrierbox[bands[i]].insert(0, mainclass.sector1.carrierbox[bands[i]].get())
@@ -161,7 +133,7 @@ class SectorFrame(ttk.Labelframe):
             self.powerbox[bands[i]].grid(row=8, column=i + 1, padx=(7, 7))
             self.powerbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.powerbox[bands[i]].delete(0, tk.END)
-            if parentsector is None:
+            if self.parentsector is None:
                 self.powerbox[bands[i]].insert(0, 40)
             else:
                 self.powerbox[bands[i]].insert(0, mainclass.sector1.powerbox[bands[i]].get())
@@ -175,7 +147,7 @@ class SectorFrame(ttk.Labelframe):
             self.losesbox[bands[i]].grid(row=9, column=i + 1, padx=(7, 7))
             self.losesbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.losesbox[bands[i]].delete(0, tk.END)
-            if parentsector is None:
+            if self.parentsector is None:
                 self.losesbox[bands[i]].insert(0, 1)
             else:
                 self.losesbox[bands[i]].insert(0, mainclass.sector1.losesbox[bands[i]].get())
@@ -189,8 +161,8 @@ class SectorFrame(ttk.Labelframe):
             self.utilbox[bands[i]].grid(row=10, column=i + 1, padx=(7, 7))
             self.utilbox[bands[i]].bind("<KeyRelease>", lambda evnt: self.updatetotpowers())
             self.utilbox[bands[i]].delete(0, tk.END)
-            if parentsector is None:
-                self.utilbox[bands[i]].insert(0, 85)
+            if self.parentsector is None:
+                self.utilbox[bands[i]].insert(0, 80)
             else:
                 self.utilbox[bands[i]].insert(0, mainclass.sector1.utilbox[bands[i]].get())
 
@@ -232,6 +204,11 @@ class SectorFrame(ttk.Labelframe):
             submit = ttk.Button(frame2, text='Submit sector {}'.format(self.sector), command=self.submitantenna)
             submit.grid(row=0, column=0, sticky='ns')
 
+        self.filldefaultvalues(parentsector, mainclass)
+
+    # METHODS###################################################
+
+    def filldefaultvalues(self, parentsector, mainclass):
         # fill default values
         if parentsector is None:
             self.antcombobox.current(0)
@@ -245,8 +222,6 @@ class SectorFrame(ttk.Labelframe):
             self.mechtilttext.insert(0, mainclass.sector1.mechtilttext.get())
             self.midheighttext.insert(0, mainclass.sector1.midheighttext.get())
             self.antcombobox.event_generate("<<ComboboxSelected>>", when='tail')
-
-    # METHODS###################################################
 
     def antennaselected(self, event):
         # when antenna selected, fill tilts
@@ -388,6 +363,7 @@ class SectorFrame(ttk.Labelframe):
         if len(self.azimtext.get()) == 0 or len(self.mechtilttext.get()) == 0 or len(self.midheighttext.get()) == 0:
             newwindow = tk.Toplevel()
             newwindow.iconbitmap('icon.ico')
+            newwindow.grab_set()
             message = 'Please fill all required values then submit antenna.'
             messagelbl = tk.Message(newwindow, text=message, width=400)
             messagelbl.grid(row=0, column=0, sticky='ns')
@@ -415,5 +391,5 @@ class SectorFrame(ttk.Labelframe):
                 self.mainclass.sectorslist.append(self)
                 self.mainclass.writesectors()
 
-            self.master.withdraw()
+            self.master.destroy()
 
