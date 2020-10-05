@@ -798,7 +798,7 @@ class Main(ttk.Frame):
                     powerdensity = np.zeros_like(xvalues)
                     gainatten = np.zeros_like(xvalues)
                     for i in range(len(sectortheta)):
-                        gainatten[i] = sector.gain[band] - sector.horizontal[band][sector.azimuth - angle] - \
+                        gainatten[i] = sector.gain[band] - sector.horizontal[band][relangle] - \
                                        sector.vertical[band][sectortheta[i]]
 
                         powerdensity[i] = self.s(power, gainatten[i], R[i])
