@@ -8,7 +8,7 @@ import tkinter.filedialog
 from pathlib import Path
 
 antennas = readdb()
-bands = [700, 800, 900, 1800, 2100, 2600, 3500]
+bands = [700, 800, 900, 1800, 2100, 2600, 3500, 3700]
 
 
 class AntennasDB(tk.Frame):
@@ -216,4 +216,8 @@ class AntennasDB(tk.Frame):
         horax.set_rticks([-3, -10, -20, -30, -40])
         fig.suptitle(f"{defname}, Gain={gain:.2f}dBi")
 
+        # only for private build
+        fig.text(0.25, 0.3, "Victus Networks", va='center', ha='center', fontsize=15, color='gray', alpha=0.5)
+        fig.text(0.75, 0.3, "Victus Networks", va='center', ha='center', fontsize=15, color='gray', alpha=0.5)
+        # only for private build
         fig.savefig(fpath)

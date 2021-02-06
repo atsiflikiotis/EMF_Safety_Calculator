@@ -8,6 +8,7 @@ def invertimage(img):
     img[:, :, :3] = 1 - img[:, :, :3]
     return img
 
+
 def verticalplot(obj):
     try:
         angle = int(obj.directionbox.get())
@@ -39,7 +40,7 @@ def verticalplot(obj):
         realplot.set_label('Sampled points/1°')
         obj.verplotax.legend(loc=0, frameon=True, framealpha=0.8, facecolor='white')
 
-    obj.verplotax.set_xlim(0, obj.maxdistance)
+    obj.verplotax.set_xlim(0, obj.range)
 
     cursor = mplcursors.cursor(setver, hover=True)
 
@@ -66,7 +67,7 @@ def verticalplot(obj):
             obj.x2markerbox.delete(0, tk.END)
 
         
-        if (x1 >= x2) or (x1 < 0) or (x2 > obj.maxdistance):
+        if (x1 >= x2) or (x1 < 0) or (x2 > obj.range):
             obj.markersflag = False
         else:
             obj.markersflag = True
@@ -87,7 +88,7 @@ def verticalplot(obj):
     maxdepps = yinterp[maxidx]
     xmax = xinterp[maxidx]
 
-    if xmax >= 0.5 * obj.maxdistance:
+    if xmax >= 0.5 * obj.range:
         xtext = xmax - 3
     else:
         xtext = xmax + 1.5
@@ -135,11 +136,8 @@ def horizontalplot(obj):
 
     obj.maxdistance = int(np.ceil(np.max(rmvalues)))
     obj.maxphi = int(np.argmax(rmvalues))
-    # if len(obj.directionbox.get()) == 0:
-    #     obj.directionbox.insert(0, obj.maxphi)
 
     cursor = mplcursors.cursor(sethor, hover=True)
-
     @cursor.connect("add")
     def on_add(sel):
         i = sel.target.index
@@ -167,6 +165,24 @@ def horizontalplot(obj):
 
     textvar1 = 'Max Rm: {:.1f}m \nat φ = {}°'.format(np.max(rmvalues), obj.maxphi)
     obj.horplotax.text(-0.7, 0.7, textvar1, transform=obj.horplotax.transAxes, fontsize=11)
+
+    # set direction to max Rm if selected:
+    if obj.dirchoice.get() == 0:
+        obj.directionbox.config(state='normal')
+        obj.directionbox.delete(0, tk.END)
+        obj.directionbox.insert(0, obj.maxphi)
+        obj.directionbox.config(state='disabled')
+
+    angle = int(obj.directionbox.get())
+    if angle < 0:
+        angle += 360
+    if angle > 360:
+        angle -= 360
+
+    obj.horplotax.plot([np.deg2rad(angle), np.deg2rad(angle)], [0, obj.maxdistance],
+                       color="red", linewidth=1, linestyle='dashed')
+
+    # plot markers
     if obj.phimarkersflag:
 
         if phi1 < phi2:
@@ -199,7 +215,10 @@ def contourplot(obj):
     obj.contourplotax.cla()
 
     if obj.cb is not None:
-        obj.cb.remove()
+        try:
+            obj.cb.remove()
+        except KeyError:
+            pass
 
     level = obj.evallevel
 

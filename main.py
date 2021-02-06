@@ -16,9 +16,9 @@ import SectorFrame as SecFrame
 import plots
 from tkinter.messagebox import showerror, showwarning
 import toplevelwindow as tl
-from validuser import validation
+from validation import validuser
 
-version = 'v2.1.0 2020'
+version = '2.2.0'
 bands = AntDB.bands
 
 
@@ -40,7 +40,7 @@ class Main(ttk.Frame):
         super().__init__(master, **kwargs)
         self.master = master  # instance attribute
         master.title("EMF SAFETY CALCULATOR")
-        master.geometry('1300x800')
+        master.geometry('1350x800')
         master.iconbitmap('icon.ico')
 
         menubar = tk.Menu(master)
@@ -89,29 +89,23 @@ class Main(ttk.Frame):
         self.page2.columnconfigure(0, weight=1)
         self.page2.columnconfigure(1, weight=0)
 
-        self.settingswindow = None
-        self.reflbox = None
-        self.modelvar = None
-        self.limitfactorbox = None
-
-        self.allsectorslist = None
-        self.validhgeigh = None
-
         try:
             with open('settings.json', 'r') as fp:
                 self.settings = json.load(fp)
         except FileNotFoundError:
-            self.settings = {'model': 0, 'reflcoef': 0.4, 'limitfactor': 0.4}
+            self.settings = {'model': 0, 'reflcoef': 0.4, 'limitfactor': 0.4, 'range': 'auto'}
 
         # get default settings:
         try:
             self.model = self.settings['model']
             self.reflcoef = self.settings['reflcoef']
-            self.limitfactor = self.settings['limitfactor']
         except KeyError:
             self.model = 1
             self.reflcoef = 0.4
-            self.limitfactor = 0.4
+        # reset critical settings:
+        self.limitfactor = 0.4
+        self.rangeopt = 'Auto'
+        self.range = None
 
         # write values depending on preferences
         if self.model == 0:  # freespaceloss
@@ -129,6 +123,17 @@ class Main(ttk.Frame):
 
         self.reflevel = 0
         self.evallevel = 0
+
+        self.settingswindow = None
+        self.reflbox = None
+        self.modelvar = tk.IntVar()
+        self.limitfactorbox = None
+        self.verticalrangevar = tk.StringVar()
+        self.allsectorslist = None
+        self.validhgeigh = None
+        self.verticalrangerbtn1 = None
+        self.verticalrangerbtn2 = None
+        self.manualrangebox = None
 
         reflevelframe = ttk.Frame(self.page1)
         reflevelframe.grid(row=0, column=0, padx=10, pady=5, sticky='nswe')
@@ -175,46 +180,53 @@ class Main(ttk.Frame):
         calcframe.columnconfigure(0, weight=1)
         self.plotlinesbtn = ttk.Button(calcframe, text='Plot Lines', command=self.plotlines, width=10)
         self.plotlinesbtn.grid(row=0, column=0, sticky='ns', padx=5, pady=(5, 0))
+
         # lineplotsframe
         lineplotsframe = ttk.LabelFrame(self.page1, text='Line plots', relief='sunken')
         lineplotsframe.grid(row=1, column=1, sticky='nsew', padx=10, pady=(0, 5), rowspan=10)
 
         lineplotsframe.rowconfigure(0, weight=0)
         lineplotsframe.rowconfigure(1, weight=1)
-
         lineplotsframe.columnconfigure(0, weight=0)
         lineplotsframe.columnconfigure(1, weight=1)
 
         # subframe for direction label
         subframe = ttk.Frame(lineplotsframe)
         subframe.grid(row=0, column=0, sticky='nsew')
-        self.directionbox = ttk.Entry(subframe, width=5, justify='center')
-        self.directionlbl = ttk.Label(subframe, text='Direction (°):')
-        self.directionlbl.grid(row=0, column=2, padx=(20, 4), pady=5, sticky='w')
-        self.directionbox.grid(row=0, column=3, padx=(1, 4), pady=5, sticky='w')
+
         evalleveltext = ttk.Label(subframe, text='Evaluation level (m):')
         evalleveltext.grid(row=0, column=0, padx=(5, 3), pady=5, sticky='w')
         self.evallevelbox = ttk.Entry(subframe, width=7, justify='center')
         self.evallevelbox.grid(row=0, column=1, padx=1, pady=5, sticky='w')
         self.evallevelbox.insert(0, 0)
-        subframe.columnconfigure(0, weight=0)
-        subframe.columnconfigure(1, weight=0)
-        subframe.columnconfigure(2, weight=0)
-        subframe.columnconfigure(3, weight=0)
+
+        self.directionlbl = ttk.Label(subframe, text='Direction (°):')
+        self.directionlbl.grid(row=0, column=2, padx=(20, 4), pady=5, sticky='w')
+
+        # direction options frame
+        dirframe = tk.Frame(subframe)
+        dirframe.grid(row=0, column=3, rowspan=2, padx=(1, 4), pady=0, sticky='nsew')
+        self.dirchoice = tk.IntVar(0)
+        dirrbtn1 = ttk.Radiobutton(dirframe, text='at max Rm', variable=self.dirchoice, value=0, command=self.dirbtnchanged)
+        dirrbtn1.grid(row=0, column=0, padx=2, pady=(1, 5), columnspan=2, sticky='w')
+        dirrbtn2 = ttk.Radiobutton(dirframe, text='Manual:', variable=self.dirchoice, value=1, command=self.dirbtnchanged)
+        dirrbtn2.grid(row=1, column=0, padx=2, pady=1)
+        self.directionbox = ttk.Entry(dirframe, width=5, justify='center', state='disabled')
+        self.directionbox.grid(row=1, column=1, padx=(0, 1), pady=1, sticky='w')
 
         # subframe for x1, x2 markers
         markersframe = ttk.Frame(lineplotsframe)
-        markersframe.grid(row=0, column=2, sticky='nse', padx=5)
+        markersframe.grid(row=0, column=2, sticky='nse', padx=5, pady=5)
 
         x1markerlbl = ttk.Label(markersframe, text='x1 (m):')
         self.x1markerbox = ttk.Entry(markersframe, width=5, justify='center')
         x2markerlbl = ttk.Label(markersframe, text='x2 (m):')
         self.x2markerbox = ttk.Entry(markersframe, width=5, justify='center')
 
-        x1markerlbl.grid(row=0, column=1, sticky='e', padx=(5, 2), pady=5)
-        self.x1markerbox.grid(row=0, column=2, sticky='e', padx=0, pady=5)
-        x2markerlbl.grid(row=0, column=3, sticky='e', padx=(10, 2), pady=5)
-        self.x2markerbox.grid(row=0, column=4, sticky='e', padx=(0, 5), pady=5)
+        x1markerlbl.grid(row=0, column=1, sticky='se', padx=(5, 2), pady=1)
+        self.x1markerbox.grid(row=0, column=2, sticky='se', padx=0, pady=1)
+        x2markerlbl.grid(row=0, column=3, sticky='se', padx=(10, 2), pady=1)
+        self.x2markerbox.grid(row=0, column=4, sticky='se', padx=(0, 5), pady=1)
 
         # phi markers for horizontal plot
         phi1markerlbl = ttk.Label(markersframe, text='φ1 (°):')
@@ -222,16 +234,10 @@ class Main(ttk.Frame):
         phi2markerlbl = ttk.Label(markersframe, text='φ2 (°):')
         self.phi2markerbox = ttk.Entry(markersframe, width=4, justify='center')
 
-        phi1markerlbl.grid(row=0, column=5, sticky='e', padx=(5, 2), pady=5)
-        self.phi1markerbox.grid(row=0, column=6, sticky='e', padx=0, pady=5)
-        phi2markerlbl.grid(row=0, column=7, sticky='e', padx=(10, 2), pady=5)
-        self.phi2markerbox.grid(row=0, column=8, sticky='e', padx=(0, 15), pady=5)
-
-        markersframe.columnconfigure(0, weight=0)
-        markersframe.columnconfigure(1, weight=0)
-        markersframe.columnconfigure(2, weight=0)
-        markersframe.columnconfigure(3, weight=0)
-        markersframe.columnconfigure(4, weight=0)
+        phi1markerlbl.grid(row=0, column=5, sticky='nse', padx=(5, 2), pady=1)
+        self.phi1markerbox.grid(row=0, column=6, sticky='nsne', padx=0, pady=1)
+        phi2markerlbl.grid(row=0, column=7, sticky='nse', padx=(10, 2), pady=1)
+        self.phi2markerbox.grid(row=0, column=8, sticky='nse', padx=(0, 15), pady=1)
 
         lineplotsframe.columnconfigure(0, weight=0)
         lineplotsframe.columnconfigure(1, weight=1)
@@ -442,7 +448,7 @@ class Main(ttk.Frame):
         self.settingswindow.geometry("+%d+%d" % (x + 400, y + 300))
 
         self.settingswindow.iconbitmap('icon.ico')
-        self.modelvar = tk.IntVar()
+
         modelframe = ttk.LabelFrame(self.settingswindow, text='Propagation model')
         modelframe.grid(row=0, column=0, padx=10, pady=10)
         model1rb = ttk.Radiobutton(modelframe, text='Free space loss', value=0, variable=self.modelvar)
@@ -462,24 +468,37 @@ class Main(ttk.Frame):
         self.reflbox.delete(0, tk.END)
         self.reflbox.insert(0, self.reflcoef)
         self.reflbox.config(state='readonly')
+
+        # vertical plot range option:
+        rangeframe = ttk.LabelFrame(self.settingswindow, text='Vertical plot range')
+        rangeframe.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+        text1 = ttk.Label(rangeframe, text='Set vertical plot range (m):')
+        text1.grid(row=0, column=0, rowspan=2, sticky='nsew', padx=10, pady=10)
+        self.verticalrangerbtn1 = ttk.Radiobutton(rangeframe, text='Auto calculate Rm', variable=self.verticalrangevar,
+                                                  value='Auto')
+        self.verticalrangerbtn2 = ttk.Radiobutton(rangeframe, text='Force plot to range (m):', variable=self.verticalrangevar,
+                                                  value='Manual')
+        self.verticalrangevar.set(self.rangeopt)
+        self.verticalrangerbtn1.grid(row=0, column=1, padx=2, pady=(5, 2), sticky='nsew')
+        self.verticalrangerbtn2.grid(row=1, column=1, padx=2, pady=(2, 5), sticky='nsew')
+        self.manualrangebox = ttk.Entry(rangeframe, width=5, justify='center')
+        self.manualrangebox.grid(row=1, column=2, padx=2, pady=5, sticky='nsew')
+        if self.rangeopt == 'Manual':
+            self.manualrangebox.delete(0, tk.END)
+            self.manualrangebox.insert(0, self.range)
+
         # limit reduction factor
         limitframe = ttk.LabelFrame(self.settingswindow, text='ICNIRP Limits')
-        limitframe.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
-        text1 = ttk.Label(limitframe, text='Limit reduction factor (%):')
+        limitframe.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+        text2 = ttk.Label(limitframe, text='Limit reduction factor (%):')
         self.limitfactorbox = ttk.Entry(limitframe, width=5, justify='center')
-        text1.grid(row=0, column=0, sticky='nsw', padx=(5, 5), pady=(5, 5))
+        text2.grid(row=0, column=0, sticky='nsw', padx=(5, 5), pady=(5, 5))
         self.limitfactorbox.grid(row=0, column=1, sticky='nsw', padx=(5, 5), pady=(5, 5))
         self.limitfactorbox.delete(0, tk.END)
         self.limitfactorbox.insert(0, self.limitfactor * 100)
+
         submitsettingsbtn = ttk.Button(self.settingswindow, text='Save', command=self.submitsettings)
         submitsettingsbtn.grid(row=3, column=0, pady=20)
-
-        # incrementtext = ttk.Label(gridframe, text='Increment (m): ')
-        # incrementtext.grid(row=0, column=2, sticky='nsw', padx=(35, 5), pady=(5, 5))
-        # self.incrementbox = ttk.Entry(gridframe, width=5, justify='center')
-        # self.incrementbox.grid(row=0, column=3, sticky='nsw', padx=(5, 5), pady=(5, 5))
-        # self.incrementbox.delete(0, tk.END)
-        # self.incrementbox.insert(0, 0.1)
 
     def limit(self, band):  # f is in MHz
         if band < 400:
@@ -493,14 +512,12 @@ class Main(ttk.Frame):
         self.model = self.modelvar.get()
         self.settings['model'] = self.model
         self.limitfactor = 0.01 * float(self.limitfactorbox.get())
-        self.settings['limitfactor'] = self.limitfactor
 
         if self.model == 0:
             # freespace
             self.alpha = 1
             self.kappa = 4 * np.pi
             self.gamma = 2
-            self.settingswindow.destroy()
         elif self.model == 1:
             # two-ray
             self.reflcoef = float(self.reflbox.get())
@@ -508,12 +525,26 @@ class Main(ttk.Frame):
             self.alpha = (1 + self.reflcoef) ** 2
             self.kappa = 4 * np.pi
             self.gamma = 2
-            self.settingswindow.destroy()
         else:
             # los cost-wi model
             self.alpha = 1
             self.kappa = 2.08
             self.gamma = 2.6
+
+        if self.verticalrangevar.get() == 'Manual':
+            try:
+                temp = float(self.manualrangebox.get())
+            except ValueError:
+                showerror('Number Error', 'Range of vertical plot should be a number')
+            else:
+                if temp > 70 or temp < 0:
+                    showerror('Please enter a positive range value <70m')
+                else:
+                    self.range = temp
+                    self.rangeopt = 'Manual'
+                    self.settingswindow.destroy()
+        else:
+            self.rangeopt = 'Auto'
             self.settingswindow.destroy()
 
         with open('settings.json', 'w') as fp:
@@ -576,11 +607,9 @@ class Main(ttk.Frame):
                 self.evallevel = maxevallevel
                 self.evallevelbox.delete(0, tk.END)
                 self.evallevelbox.insert(0, maxevallevel)
-        
 
         self.evallevel2box.delete(0, tk.END)
         self.evallevel2box.insert(0, self.evallevel)
-
 
     def reget_grid(self):
         # get levels from contourplot buttons
@@ -597,8 +626,7 @@ class Main(ttk.Frame):
             
         # get all sectors and max valid eval height
         maxevallevel = self.checkheight()
-        
-        
+
         # get evaluation level from box in image plot tab
         try:
             self.evallevel = float(self.evallevel2box.get())
@@ -645,7 +673,7 @@ class Main(ttk.Frame):
         self.size = (np.size(self.yy), np.size(self.xx))
         self.rho = np.sqrt(self.xx ** 2 + self.yy ** 2)
         self.phi = np.arctan2(self.xx, self.yy) * 180 / np.pi
-        #get phi angles to 0.1degrees accuracy
+        # get phi angles to 0.1degrees accuracy
         self.phi = np.round(self.phi, 1)
 
     def lineargrid(self):
@@ -755,11 +783,14 @@ class Main(ttk.Frame):
         if angle < 0:
             angle += 360
 
-        xinterp = np.arange(0, self.maxdistance + 0.05, 0.05)
+        if self.rangeopt == 'Auto':
+            self.range = self.maxdistance
+
+        xinterp = np.arange(0, self.range + 0.05, 0.05)
         yinterp = np.zeros_like(xinterp)
         flag = True
         Ho = self.sector1.antheight + self.reflevel - level - 2
-        thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
+        thetaxend = np.arctan2(self.range, Ho) * 180 / np.pi
         thetaxmax = int(np.ceil(thetaxend))
         xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
         H = np.full_like(xvalues, Ho)
@@ -772,7 +803,7 @@ class Main(ttk.Frame):
             Ho = sector.antheight + self.reflevel - level - 2
             if not flag:
                 # new theta and x values
-                thetaxend = np.arctan2(self.maxdistance, Ho) * 180 / np.pi
+                thetaxend = np.arctan2(self.range, Ho) * 180 / np.pi
                 thetaxmax = int(np.ceil(thetaxend))
                 xvalues = (Ho * np.tan(np.arange(thetaxmax + 1) * np.pi / 180))
                 H = np.full_like(xvalues, Ho)
@@ -834,11 +865,10 @@ class Main(ttk.Frame):
             sum_ += rmband
         return sum_ ** (1 / self.gamma)
 
-
     def addimage(self):
         cwd = os.getcwd()
         filepath = tk.filedialog.askopenfilename(initialdir=cwd, title="Select file",
-                                                 filetypes=[("Png image", "*.png"), ("JPEG image", "*.jpg")])
+                                                 filetypes=[("Png image", "*.png")])
 
         self.img = plt.imread(filepath)
         
@@ -1048,6 +1078,12 @@ class Main(ttk.Frame):
                     self.sector1.horizontal[bands[i]] = self.sector1.patterns[bands[i]][:, 0]
                     self.sector1.vertical[bands[i]] = self.sector1.patterns[bands[i]][:, 1]
 
+    def dirbtnchanged(self):
+        if self.dirchoice.get() == 0:
+            self.directionbox.config(state='disabled')
+        else:
+            self.directionbox.config(state='normal')
+
 
 def quit_me():
     root.quit()
@@ -1069,12 +1105,12 @@ def about():
     else:
         pass
 
-    tk.Message(aboutwindow, text=version, aspect=1000).grid(row=0, column=0, padx=5, pady=10, sticky='nw')
+    tk.Message(aboutwindow, text=f"v{version}", aspect=1000).grid(row=0, column=0, padx=5, pady=10, sticky='nw')
     tk.Message(aboutwindow, text=text, aspect=1000).grid(row=1, column=0, padx=5, pady=10, sticky='nw')
 
 
 if __name__ == '__main__':
-    answer, username = validation()
+    answer, username = validuser(version)
     if answer == 'pass':
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", quit_me)
@@ -1083,6 +1119,7 @@ if __name__ == '__main__':
         mainapp = Main(root)
         root.mainloop()
     elif len(answer) > 1:
+        # for displaying error message when login process
         loginwindow = tk.Tk()
         s1 = ttk.Style()
         s1.theme_use('vista')
