@@ -18,7 +18,7 @@ from tkinter.messagebox import showerror, showwarning
 import toplevelwindow as tl
 from validation import validuser
 
-version = '2.2.0'
+version = '3.0.1'
 bands = AntDB.bands
 
 
