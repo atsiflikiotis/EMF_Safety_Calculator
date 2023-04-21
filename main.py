@@ -3,20 +3,18 @@ import os
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.ttk as ttk
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import RectBivariateSpline
-
 import Antennas_DB as AntDB
 import SectorFrame as SecFrame
 import plots
 from tkinter.messagebox import showerror, showwarning
 import toplevelwindow as tl
-from validation import validuser
+
 
 version = '3.0.1'
 bands = AntDB.bands
@@ -137,7 +135,7 @@ class Main(ttk.Frame):
 
         reflevelframe = ttk.Frame(self.page1)
         reflevelframe.grid(row=0, column=0, padx=10, pady=5, sticky='nswe')
-        refleveltext = ttk.Label(reflevelframe, text='Reference level (m):')
+        refleveltext = ttk.Label(reflevelframe, text='Reference height (m):')
         refleveltext.grid(row=0, column=0, sticky='nsw', padx=(5, 3), pady=5)
         self.reflevelbox = ttk.Entry(reflevelframe, width=7, justify='center')
         self.reflevelbox.grid(row=0, column=1, padx=3, pady=5, sticky='nsw')
@@ -194,7 +192,7 @@ class Main(ttk.Frame):
         subframe = ttk.Frame(lineplotsframe)
         subframe.grid(row=0, column=0, sticky='nsew')
 
-        evalleveltext = ttk.Label(subframe, text='Evaluation level (m):')
+        evalleveltext = ttk.Label(subframe, text='Evaluation height (m):')
         evalleveltext.grid(row=0, column=0, padx=(5, 3), pady=5, sticky='w')
         self.evallevelbox = ttk.Entry(subframe, width=7, justify='center')
         self.evallevelbox.grid(row=0, column=1, padx=1, pady=5, sticky='w')
@@ -559,7 +557,7 @@ class Main(ttk.Frame):
 
     def checkheight(self):
         self.allsectorslist = [self.sector1] + self.sectorslist
-        # check min evaluation level:
+        # check min evaluation height:
         minheight = 1e10
         for sec in self.allsectorslist:
             if sec.antheight < minheight:
@@ -1110,28 +1108,13 @@ def about():
 
 
 if __name__ == '__main__':
-    answer, username = validuser(version)
-    if answer == 'pass':
-        root = tk.Tk()
-        root.protocol("WM_DELETE_WINDOW", quit_me)
-        s = ttk.Style()
-        s.theme_use('vista')
-        mainapp = Main(root)
-        root.mainloop()
-    elif len(answer) > 1:
-        # for displaying error message when login process
-        loginwindow = tk.Tk()
-        s1 = ttk.Style()
-        s1.theme_use('vista')
-        loginwindow.title("LOGIN")
-        loginwindow.geometry('300x200')
-        loginwindow.iconbitmap('icon.ico')
-        loginwindow.rowconfigure(0, weight=1)
-        loginwindow.columnconfigure(0, weight=1)
-        tk.Message(loginwindow, text=answer, width=200, justify='center').grid(row=0, column=0,
-                                                                                     padx=10, pady=10)
-        loginwindow.mainloop()
-    else:
-        pass
+    username = os.getlogin()
+    root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", quit_me)
+    s = ttk.Style()
+    s.theme_use('vista')
+    mainapp = Main(root)
+    root.mainloop()
+
 
 

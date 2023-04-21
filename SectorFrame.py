@@ -43,7 +43,7 @@ class SectorFrame(ttk.Labelframe):
         lbl1 = ttk.Label(frame1, text='Antenna')
         lbl2 = ttk.Label(frame1, text='Azimuth (°)')
         lbl3 = tk.Message(frame1, text='Mech. Tilt (°)', aspect=200, justify='center')
-        lbl4 = tk.Message(frame1, text='Mid height from ref level (m)', aspect=200, justify='center')
+        lbl4 = tk.Message(frame1, text='Mid height from ref. level (m)', aspect=200, justify='center')
         lbl1.grid(row=0, column=0, columnspan=5, sticky='ns', padx=5)
         lbl2.grid(row=0, column=5, sticky='ns', padx=5, columnspan=2)
         lbl3.grid(row=0, column=7, sticky='nsew', padx=5, columnspan=2)
@@ -92,7 +92,7 @@ class SectorFrame(ttk.Labelframe):
         lbl12 = ttk.Label(self, text='TRXs/Carriers:').grid(row=7, column=0, sticky='nw', padx=(5, 5), pady=(0, 0))
         lbl7 = ttk.Label(self, textvariable=self.powerunitvar).grid(row=8, column=0, sticky='nw', padx=(5, 5),
                                                                     pady=(0, 0))
-        lbl8 = ttk.Label(self, text='Loses (dB):').grid(row=9, column=0, sticky='nw', padx=(5, 5), pady=(0, 0))
+        lbl8 = ttk.Label(self, text='Losses (dB):').grid(row=9, column=0, sticky='nw', padx=(5, 5), pady=(0, 0))
         lbl9 = ttk.Label(self, text='Utilizaton (%):').grid(row=10, column=0, sticky='nw', padx=(5, 5), pady=(0, 0))
         # separator2 row 11
         lbl10 = ttk.Label(self, text='Tot. Power (W):').grid(row=12, column=0, sticky='nw', padx=(5, 5), pady=(0, 0))
