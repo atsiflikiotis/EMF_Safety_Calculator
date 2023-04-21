@@ -43,7 +43,7 @@ class SectorFrame(ttk.Labelframe):
         lbl1 = ttk.Label(frame1, text='Antenna')
         lbl2 = ttk.Label(frame1, text='Azimuth (°)')
         lbl3 = tk.Message(frame1, text='Mech. Tilt (°)', aspect=200, justify='center')
-        lbl4 = tk.Message(frame1, text='Mid height from ref. level (m)', aspect=200, justify='center')
+        lbl4 = tk.Message(frame1, text='MoA height from ref. level (m)', aspect=200, justify='center')
         lbl1.grid(row=0, column=0, columnspan=5, sticky='ns', padx=5)
         lbl2.grid(row=0, column=5, sticky='ns', padx=5, columnspan=2)
         lbl3.grid(row=0, column=7, sticky='nsew', padx=5, columnspan=2)
